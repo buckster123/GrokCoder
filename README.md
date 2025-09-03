@@ -6,9 +6,9 @@
 ![Powered by xAI](https://img.shields.io/badge/Powered%20by-xAI-FF69B4.svg)
 ![Platform](https://img.shields.io/badge/Platform-Raspberry%20Pi%205-red.svg)
 
-![[GrokCoder Banner](path/to/your/banner-image.png](https://github.com/buckster123/GrokCoder/blob/main/screenshot.png) <!-- Replace with actual banner image URL -->
+![GrokCoder Banner](path/to/your/banner-image.png) <!-- Replace with actual banner image URL -->
 
- A standalone coding agent that harnesses xAI models like grok-4-0709, grok-3-mini, and grok-code-fast-1 into a dual-brain powerhouse. Grok-4-0709 handles strategic planning, grok-code-fast-1 delivers rapid code generation, and grok-3-mini manages quick tasks. It's like having R2-D2, C-3PO, and BB-8 embedded in your Raspberry Pi 5, transforming compact hardware into a full-fledged software development lab.
+A standalone coding agent that leverages xAI models like grok-4-0709, grok-3-mini, and grok-code-fast-1 for agent-style workflows. Use grok-4-0709 for strategic planning in one session, then switch to grok-code-fast-1 in another to execute tasks in the sandbox. Grok-3-mini can handle quick adjustments. It's like having a team of specialized droids in your Raspberry Pi 5—R2-D2 for planning, C-3PO for code execution, and BB-8 for tweaks—turning compact hardware into a software development lab.
 
 ## Table of Contents
 
@@ -26,7 +26,7 @@
 
 ![GrokCoder Demo](path/to/your/demo-gif-or-screenshot.gif) <!-- Replace with actual GIF or screenshot URL -->
 
-GrokCoder is a sleek, Streamlit-based coding agent optimized for the Raspberry Pi 5, turning xAI's API into an interactive chat system. It integrates compatible xAI models—such as grok-4-0709 for advanced planning, grok-3-mini for lightweight tasks, and grok-code-fast-1 for rapid code execution—into a powerful tool for code generation, debugging, and automation.
+GrokCoder is a sleek, Streamlit-based coding agent optimized for the Raspberry Pi 5, turning xAI's API into an interactive chat system. It supports compatible xAI models—such as grok-4-0709 for advanced planning, grok-3-mini for lightweight tasks, and grok-code-fast-1 for rapid code execution—allowing you to switch between them for different phases of your workflow.
 
 Running in a Python virtual environment (venv), it offers streaming responses, customizable system prompts, and sandboxed tools, all wrapped in a neon-gradient UI that's cyberpunk-inspired yet user-friendly.
 
@@ -39,7 +39,7 @@ Why focus on the Pi? Coding on an $80 powerhouse embodies peak efficiency—depl
 ## Features
 
 - **Interactive Chat with Streaming**: Real-time responses in a bubbly chat format. Human vs. AI avatars (🧑 vs. 🤖), expandable message chunks, and auto-highlighted code blocks for syntax wizardry.
-- **Model Flexibility**: Seamlessly switch between xAI models like grok-4-0709 for deep reasoning, grok-3-mini for efficient tasks, and grok-code-fast-1 for specialized code generation.
+- **Model Flexibility**: Easily switch between xAI models like grok-4-0709 for deep reasoning, grok-3-mini for efficient tasks, and grok-code-fast-1 for specialized code generation to suit different stages of your project.
 - **Prompt Engineering Hub**: Load, edit, and save system prompts from `./prompts/`. Defaults include coding, creative, and tool-enabled workflows tailored for GrokCoder.
 - **Secure Authentication**: Hashed passwords via passlib—no more weak defaults like "admin/admin."
 - **History Management**: SQLite-backed, searchable, and user-specific chat histories with auto-generated titles.
@@ -106,22 +106,21 @@ docker run -p 8501:8501 --network=host grokcoder
 
 Streamlit makes web apps easy—start with [docs](https://docs.streamlit.io/) and monitor resources via `htop` on Pi.
 
-## Example Use Case: Dual-Model Coding Agent 🧠💻
+## Example Use Case: Agent-Style Coding Workflow 🧠💻
 
-**Scenario**: Build a weather scraper on your Pi.
+**Scenario**: Build a weather scraper on your Pi using a multi-model approach.
 
-1. **Plan with grok-4-0709**: Prompt: "Outline a Python scraper: steps, libs (requests, beautifulsoup), error handling."
+1. **Plan with grok-4-0709**: In one session, select the model and prompt: "Outline a Python scraper: steps, libs (requests, beautifulsoup), error handling."
    - AI delivers a step-by-step blueprint.
 
-2. **Execute with grok-code-fast-1**: Paste the plan: "Code this up, PEP 8 style."
-   - AI generates a clean script with tests; write to sandbox.
+2. **Execute with grok-code-fast-1**: Start a new session or switch models, paste the plan: "Code this up, PEP 8 style."
+   - AI generates a clean script with tests; write to sandbox for execution.
 
-3. **Refine with grok-3-mini**: "Optimize this code for speed."
-   - Quick tweaks for efficiency.
+3. **Refine with grok-3-mini**: Switch to grok-3-mini in another session for lightweight refinements: "Optimize this code for speed."
 
 4. **Verify**: Enable tools, "Read scraper.py from sandbox," and iterate. Run directly on your Pi!
 
-GrokCoder excels in agentic workflows: grok-4-0709 as architect, grok-code-fast-1 as builder, grok-3-mini for agile adjustments. Efficiency? Over 9000, even on Pi hardware.
+GrokCoder supports agent-style workflows by letting you switch models across sessions: grok-4-0709 for architecture, grok-code-fast-1 for building in the sandbox, and grok-3-mini for agile adjustments. Efficiency? Over 9000, even on Pi hardware.
 
 ## Customization
 

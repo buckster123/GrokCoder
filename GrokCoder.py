@@ -1,4 +1,3 @@
-###
 # app.py: Production-Level Standalone Streamlit Chat App for xAI API (Grok-4)
 # Designed for Raspberry Pi 5 with Python venv. Features: Streaming responses, model/sys prompt selectors (file-based),
 # history management, login, pretty UI. Uses OpenAI SDK for compatibility and streaming (xAI is compatible).

@@ -6,7 +6,7 @@
 ![Powered by xAI](https://img.shields.io/badge/Powered%20by-xAI-FF69B4.svg)
 ![Platform](https://img.shields.io/badge/Platform-Raspberry%20Pi%205-red.svg)
 
-![GrokCoder Banner]([path/to/your/banner-image.png](https://github.com/buckster123/GrokCoder/blob/main/screenshot.png) <!-- Replace with actual banner image URL -->
+![GrokCoder Banner](https://github.com/buckster123/GrokCoder/blob/main/screenshot.png)
 
 A standalone coding agent that leverages xAI models like grok-4-0709, grok-3-mini, and grok-code-fast-1 for agent-style workflows. Use grok-4-0709 for strategic planning in one session, then switch to grok-code-fast-1 in another to execute tasks in the sandbox. Grok-3-mini can handle quick adjustments. It's like having a team of specialized droids in your Raspberry Pi 5—R2-D2 for planning, C-3PO for code execution, and BB-8 for tweaks—turning compact hardware into a software development lab.
 

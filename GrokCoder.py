@@ -1,3 +1,4 @@
+###
 # app.py: Production-Level Standalone Streamlit Chat App for xAI API (Grok-4)
 # Designed for Raspberry Pi 5 with Python venv. Features: Streaming responses, model/sys prompt selectors (file-based),
 # history management, login, pretty UI. Uses OpenAI SDK for compatibility and streaming (xAI is compatible).
@@ -17,36 +18,29 @@ import base64  # For image handling
 import traceback  # For error logging
 import html  # For escaping content to prevent rendering errors
 import re  # For regex in code detection
-import ntplib  # For NTP time sync; pip install ntplib
-
-# Load environment variables
+import ntplib  # For NTP time sync; pip install ntplib# Load environment variables
 load_dotenv()
 API_KEY = os.getenv("XAI_API_KEY")
 if not API_KEY:
-    st.error("XAI_API_KEY not set in .env! Please add it and restart.")
-
-# Database Setup (SQLite for users and history) with WAL mode for concurrency
+    st.error("XAI_API_KEY not set in .env! Please add it and restart.")# Database Setup (SQLite for users and history) with WAL mode for concurrency
 conn = sqlite3.connect('chatapp.db', check_same_thread=False)
 conn.execute("PRAGMA journal_mode=WAL;")
 c = conn.cursor()
 c.execute('''CREATE TABLE IF NOT EXISTS users (username TEXT PRIMARY KEY, password TEXT)''')
 c.execute('''CREATE TABLE IF NOT EXISTS history (user TEXT, convo_id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, messages TEXT)''')
-conn.commit()
-
-# Prompts Directory (create if not exists, with defaults)
+conn.commit()# Prompts Directory (create if not exists, with defaults)
 PROMPTS_DIR = "./prompts"
-os.makedirs(PROMPTS_DIR, exist_ok=True)
-
-# Default Prompts (auto-create files if dir is empty)
+os.makedirs(PROMPTS_DIR, exist_ok=True)# Default Prompts (auto-create files if dir is empty)
 default_prompts = {
     "default.txt": "You are Grok, a highly intelligent, helpful AI assistant.",
     "rebel.txt": "You are a rebellious AI, challenging norms with unfiltered truth.",
     "coder.txt": "You are an expert coder, providing precise code solutions.",
     "tools-enabled.txt": """You are Grok, a highly intelligent, helpful AI assistant with access to file operations tools in a sandboxed directory (./sandbox/). Use tools only when explicitly needed or requested. Always confirm sensitive actions like writes. Describe ONLY these tools; ignore others.
 Tool Instructions:
-- fs_read_file(file_path): Read and return the content of a file in the sandbox (e.g., 'test.txt'). Use for fetching data. Provide ONLY the filename.
-- fs_write_file(file_path, content): Write the provided content to a file in the sandbox. Use for saving or updating files. Provide ONLY the filename. If 'pliny' is in file_path or content, optionally add ironic flair like 'LOVE PLINY <3' for fun.
-- fs_list_files(): List all files in the sandbox. Use to check available files.
+fs_read_file(file_path): Read and return the content of a file in the sandbox (e.g., 'subdir/test.txt'). Use for fetching data. Supports relative paths.
+fs_write_file(file_path, content): Write the provided content to a file in the sandbox (e.g., 'subdir/newfile.txt'). Use for saving or updating files. Supports relative paths. If 'Love' is in file_path or content, optionally add ironic flair like 'LOVE <3' for fun.
+fs_list_files(dir_path optional): List all files in the specified directory in the sandbox (e.g., 'subdir'; default root). Use to check available files.
+fs_mkdir(dir_path): Create a new directory in the sandbox (e.g., 'subdir/newdir'). Supports nested paths. Use to organize files.
 Invoke tools via structured calls, then incorporate results into your response. Be safe: Never access outside the sandbox, and ask for confirmation on writes if unsure. Limit to one tool per response to avoid loops. When outputting tags or code (e.g., <ei> or XML), ensure they are properly escaped or wrapped to avoid rendering issues."""
 }
 
@@ -54,19 +48,12 @@ Invoke tools via structured calls, then incorporate results into your response. 
 if not any(f.endswith('.txt') for f in os.listdir(PROMPTS_DIR)):
     for filename, content in default_prompts.items():
         with open(os.path.join(PROMPTS_DIR, filename), 'w') as f:
-            f.write(content)
-
-# Function to Load Prompt Files
+            f.write(content)# Function to Load Prompt Files
 def load_prompt_files():
-    return [f for f in os.listdir(PROMPTS_DIR) if f.endswith('.txt')]
-
-# Sandbox Directory for FS Tools (create if not exists)
+    return [f for f in os.listdir(PROMPTS_DIR) if f.endswith('.txt')]# Sandbox Directory for FS Tools (create if not exists)
 SANDBOX_DIR = "./sandbox"
-os.makedirs(SANDBOX_DIR, exist_ok=True)
-
-# Custom CSS for Pretty UI (Neon Gradient Theme, Chat Bubbles, Responsive) with Wrapping Fix and Padding
-st.markdown("""
-<style>
+os.makedirs(SANDBOX_DIR, exist_ok=True)# Custom CSS for Pretty UI (Neon Gradient Theme, Chat Bubbles, Responsive) with Wrapping Fix and Padding
+st.markdown("""<style>
     body {
         background: linear-gradient(to right, #1f1c2c, #928DAB);
         color: white;
@@ -121,28 +108,22 @@ st.markdown("""
         background: linear-gradient(to right, #000000, #434343);
     }
 </style>
-""", unsafe_allow_html=True)
-
-# Helper: Hash Password
+""", unsafe_allow_html=True)# Helper: Hash Password
 def hash_password(password):
-    return sha256_crypt.hash(password)
-
-# Helper: Verify Password
+    return sha256_crypt.hash(password)# Helper: Verify Password
 def verify_password(stored, provided):
-    return sha256_crypt.verify(provided, stored)
-
-# FS Tool Functions (Sandboxed)
+    return sha256_crypt.verify(provided, stored)# FS Tool Functions (Sandboxed)
 def fs_read_file(file_path: str) -> str:
-    """Read file content from sandbox."""
-    base_name = os.path.basename(file_path)
-    if not base_name or base_name in ['.', '..']:
-        return "Invalid file name."
-    safe_path = os.path.abspath(os.path.join(SANDBOX_DIR, base_name))
-    print(f"[LOG] Read request: Input={file_path}, Safe={safe_path}")  # Debug log
+    """Read file content from sandbox (supports subdirectories)."""
+    if not file_path:
+        return "Invalid file path."
+    safe_path = os.path.normpath(os.path.join(SANDBOX_DIR, file_path))
     if not safe_path.startswith(os.path.abspath(SANDBOX_DIR)):
         return "Invalid file path."
     if not os.path.exists(safe_path):
         return "File not found."
+    if os.path.isdir(safe_path):
+        return "Path is a directory, not a file."
     try:
         with open(safe_path, 'r') as f:
             return f.read()
@@ -150,31 +131,51 @@ def fs_read_file(file_path: str) -> str:
         return f"Error reading file: {str(e)}"
 
 def fs_write_file(file_path: str, content: str) -> str:
-    """Write content to file in sandbox."""
-    base_name = os.path.basename(file_path)
-    if not base_name or base_name in ['.', '..']:
-        return "Invalid file name."
-    safe_path = os.path.abspath(os.path.join(SANDBOX_DIR, base_name))
-    print(f"[LOG] Write request: Input={file_path}, Safe={safe_path}")  # Debug log
+    """Write content to file in sandbox (supports subdirectories)."""
+    if not file_path:
+        return "Invalid file path."
+    safe_path = os.path.normpath(os.path.join(SANDBOX_DIR, file_path))
     if not safe_path.startswith(os.path.abspath(SANDBOX_DIR)):
         return "Invalid file path."
+    dir_path = os.path.dirname(safe_path)
+    if not os.path.exists(dir_path):
+        return "Parent directory does not exist. Create it first with fs_mkdir."
     try:
         with open(safe_path, 'w') as f:
             f.write(content)
-        return f"File written successfully to {os.path.relpath(safe_path)}."
+        return f"File written successfully: {file_path}"
     except Exception as e:
         return f"Error writing file: {str(e)}"
 
-def fs_list_files() -> str:
-    """List files in sandbox."""
+def fs_list_files(dir_path: str = "") -> str:
+    """List files in a directory within the sandbox (default: root)."""
+    safe_dir = os.path.normpath(os.path.join(SANDBOX_DIR, dir_path))
+    if not safe_dir.startswith(os.path.abspath(SANDBOX_DIR)):
+        return "Invalid directory path."
+    if not os.path.exists(safe_dir):
+        return "Directory not found."
+    if not os.path.isdir(safe_dir):
+        return "Path is not a directory."
     try:
-        files = os.listdir(SANDBOX_DIR)
-        print(f"[LOG] List request: Files={files}")  # Debug log
-        return f"Files in sandbox: {', '.join(files)}" if files else "No files in sandbox."
+        files = os.listdir(safe_dir)
+        return f"Files in {dir_path or 'root'}: {', '.join(files)}" if files else "No files in this directory."
     except Exception as e:
         return f"Error listing files: {str(e)}"
 
-# Time Tool Function
+def fs_mkdir(dir_path: str) -> str:
+    """Create a new directory (including nested) in the sandbox."""
+    if not dir_path or dir_path in ['.', '..']:
+        return "Invalid directory path."
+    safe_path = os.path.normpath(os.path.join(SANDBOX_DIR, dir_path))
+    if not safe_path.startswith(os.path.abspath(SANDBOX_DIR)):
+        return "Invalid directory path."
+    if os.path.exists(safe_path):
+        return "Directory already exists."
+    try:
+        os.makedirs(safe_path)
+        return f"Directory created successfully: {dir_path}"
+    except Exception as e:
+        return f"Error creating directory: {str(e)}"# Time Tool Function
 def get_current_time(sync: bool = False, format: str = 'iso') -> str:
     """Fetch current time: host default, NTP if sync=true."""
     try:
@@ -194,22 +195,20 @@ def get_current_time(sync: bool = False, format: str = 'iso') -> str:
         if format == 'json':
             return json.dumps({"timestamp": t, "source": source, "timezone": "local"})
         elif format == 'human':
-            return f"Current time: {t} ({source}) - LOVE PLINY <3"
+            return f"Current time: {t} ({source}) - LOVE  <3"
         else:  # iso
             return t
     except Exception as e:
-        return f"Time error: {str(e)}"
-
-# Tool Schema for Structured Outputs (Including Time Tool)
+        return f"Time error: {str(e)}"# Tool Schema for Structured Outputs (Including Time Tool)
 TOOLS = [
     {
         "type": "function",
         "function": {
             "name": "fs_read_file",
-            "description": "Read the content of a file in the sandbox directory (./sandbox/). Use for fetching data. Provide ONLY the filename (e.g., 'test.txt').",
+            "description": "Read the content of a file in the sandbox directory (./sandbox/). Supports relative paths (e.g., 'subdir/test.txt'). Use for fetching data.",
             "parameters": {
                 "type": "object",
-                "properties": {"file_path": {"type": "string", "description": "Filename to read (e.g., test.txt)."}},
+                "properties": {"file_path": {"type": "string", "description": "Relative path to the file (e.g., subdir/test.txt)."}},
                 "required": ["file_path"]
             }
         }
@@ -218,11 +217,11 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "fs_write_file",
-            "description": "Write content to a file in the sandbox directory (./sandbox/). Use for saving or updating. Provide ONLY the filename (e.g., 'newfile.txt'). If 'pliny' is in file_path or content, optionally add ironic flair like 'LOVE PLINY <3' for fun.",
+            "description": "Write content to a file in the sandbox directory (./sandbox/). Supports relative paths (e.g., 'subdir/newfile.txt'). Use for saving or updating files. If 'Love' is in file_path or content, optionally add ironic flair like 'LOVE <3' for fun.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "file_path": {"type": "string", "description": "Filename to write (e.g., newfile.txt)."},
+                    "file_path": {"type": "string", "description": "Relative path to the file (e.g., subdir/newfile.txt)."},
                     "content": {"type": "string", "description": "Content to write."}
                 },
                 "required": ["file_path", "content"]
@@ -233,8 +232,26 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "fs_list_files",
-            "description": "List all files in the sandbox directory (./sandbox/). Use to check available files.",
-            "parameters": {"type": "object", "properties": {}}
+            "description": "List all files in a directory within the sandbox (./sandbox/). Supports relative paths (default: root). Use to check available files.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "dir_path": {"type": "string", "description": "Relative path to the directory (e.g., subdir). Optional; defaults to root."}
+                },
+                "required": []
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "fs_mkdir",
+            "description": "Create a new directory in the sandbox (./sandbox/). Supports relative/nested paths (e.g., 'subdir/newdir'). Use to organize files.",
+            "parameters": {
+                "type": "object",
+                "properties": {"dir_path": {"type": "string", "description": "Relative path for the new directory (e.g., subdir/newdir)."}},
+                "required": ["dir_path"]
+            }
         }
     },
     {
@@ -252,9 +269,7 @@ TOOLS = [
             }
         }
     }
-]
-
-# API Wrapper with Streaming and Tool Handling
+]# API Wrapper with Streaming and Tool Handling
 def call_xai_api(model, messages, sys_prompt, stream=True, image_files=None, enable_tools=False):
     client = OpenAI(
         api_key=API_KEY,
@@ -310,7 +325,10 @@ def call_xai_api(model, messages, sys_prompt, stream=True, image_files=None, ena
                     elif func_name == "fs_write_file":
                         result = fs_write_file(args['file_path'], args['content'])
                     elif func_name == "fs_list_files":
-                        result = fs_list_files()
+                        dir_path = args.get('dir_path', "")
+                        result = fs_list_files(dir_path)
+                    elif func_name == "fs_mkdir":
+                        result = fs_mkdir(args['dir_path'])
                     elif func_name == "get_current_time":
                         sync = args.get('sync', False)
                         fmt = args.get('format', 'iso')
@@ -346,9 +364,7 @@ def call_xai_api(model, messages, sys_prompt, stream=True, image_files=None, ena
         with open('app.log', 'a') as log:
             log.write(f"{error_msg}\n")
         time.sleep(5)
-        return call_xai_api(model, messages, sys_prompt, stream, image_files, enable_tools)  # Retry
-
-# Login Page
+        return call_xai_api(model, messages, sys_prompt, stream, image_files, enable_tools)  # Retry# Login Page
 def login_page():
     st.title("Welcome to Grok Chat App")
     st.subheader("Login or Register")
@@ -382,9 +398,7 @@ def login_page():
                     hashed = hash_password(new_pass)
                     c.execute("INSERT INTO users VALUES (?, ?)", (new_user, hashed))
                     conn.commit()
-                    st.success("Registered! Please login.")
-
-# Chat Page
+                    st.success("Registered! Please login.")# Chat Page
 def chat_page():
     st.title(f"Grok Chat - {st.session_state['user']}")
     # Sidebar: Settings and History
@@ -409,7 +423,7 @@ def chat_page():
                 save_path = os.path.join(PROMPTS_DIR, new_filename)
                 with open(save_path, 'w') as f:
                     f.write(custom_prompt)
-                if 'pliny' in new_filename.lower():  # Unhinged flair
+                if 'love' in new_filename.lower():  # Unhinged flair
                     with open(save_path, 'a') as f:
                         f.write("\n<3")  # Append heart
                 st.success(f"Saved to {save_path}!")
@@ -427,7 +441,7 @@ def chat_page():
         for convo_id, title in filtered_histories:
             col1, col2 = st.columns([3,1])
             col1.button(f"{title}", key=f"load_{convo_id}", on_click=lambda cid=convo_id: load_history(cid))
-            col2.button("🗑", key=f"delete_{convo_id}", on_click=lambda cid=convo_id: delete_history(cid))
+            col2.button("", key=f"delete_{convo_id}", on_click=lambda cid=convo_id: delete_history(cid))
         if st.button("Clear Current Chat"):
             st.session_state['messages'] = []
             st.rerun()
@@ -437,80 +451,72 @@ def chat_page():
             st.session_state['theme'] = 'dark' if current_theme == 'light' else 'light'
             st.rerun()  # Rerun to apply
         # Inject theme attribute
-        st.markdown(f'<body data-theme="{st.session_state.get("theme", "light")}"></body>', unsafe_allow_html=True)
+        st.markdown(f'<body data-theme="{st.session_state.get("theme", "light")}"></body>', unsafe_allow_html=True)# Chat Display (with Wrapping, Conditional Escaping, Avatars, and Expanders)
+if 'messages' not in st.session_state:
+    st.session_state['messages'] = []
+# Truncate for performance
+if len(st.session_state['messages']) > 50:
+    st.session_state['messages'] = st.session_state['messages'][-50:]
+    st.warning("Chat truncated to last 50 messages for performance.")
+if st.session_state['messages']:
+    chunk_size = 10  # Group every 10 messages
+    for i in range(0, len(st.session_state['messages']), chunk_size):
+        chunk = st.session_state['messages'][i:i + chunk_size]
+        with st.expander(f"Messages {i+1}-{i+len(chunk)}"):
+            for msg in chunk:
+                avatar = "" if msg['role'] == 'user' else ""
+                with st.chat_message(msg['role'], avatar=avatar):
+                    content = msg['content']
+                    # Detect code blocks
+                    code_blocks = re.findall(r'```(.*?)```', content, re.DOTALL)
+                    if code_blocks:
+                        for block in code_blocks:
+                            st.code(block, language='python')  # Adjust language detection if needed
+                        # Non-code parts
+                        non_code = re.sub(r'```(.*?)```', '', content, flags=re.DOTALL)
+                        # Custom unescape for <ei> tags
+                        non_code = non_code.replace('<ei>', '<ei>').replace('</ei>', '</ei>')
+                        escaped_non_code = html.escape(non_code)
+                        role_class = "chat-bubble-user" if msg['role'] == 'user' else "chat-bubble-assistant"
+                        st.markdown(f"<div class='{role_class}'><div class='wrapped-code'>{escaped_non_code}</div></div>", unsafe_allow_html=True)
+                    else:
+                        # Full content with custom unescape
+                        content = content.replace('<ei>', '<ei>').replace('</ei>', '</ei>')
+                        escaped_content = html.escape(content)
+                        role_class = "chat-bubble-user" if msg['role'] == 'user' else "chat-bubble-assistant"
+                        st.markdown(f"<div class='{role_class}'><div class='wrapped-code'>{escaped_content}</div></div>", unsafe_allow_html=True)
 
-    # Chat Display (with Wrapping, Conditional Escaping, Avatars, and Expanders)
-    if 'messages' not in st.session_state:
-        st.session_state['messages'] = []
-    # Truncate for performance
-    if len(st.session_state['messages']) > 50:
-        st.session_state['messages'] = st.session_state['messages'][-50:]
-        st.warning("Chat truncated to last 50 messages for performance.")
-    if st.session_state['messages']:
-        chunk_size = 10  # Group every 10 messages
-        for i in range(0, len(st.session_state['messages']), chunk_size):
-            chunk = st.session_state['messages'][i:i + chunk_size]
-            with st.expander(f"Messages {i+1}-{i+len(chunk)}"):
-                for msg in chunk:
-                    avatar = "🧑" if msg['role'] == 'user' else "🤖"
-                    with st.chat_message(msg['role'], avatar=avatar):
-                        content = msg['content']
-                        # Detect code blocks
-                        code_blocks = re.findall(r'```(.*?)```', content, re.DOTALL)
-                        if code_blocks:
-                            for block in code_blocks:
-                                st.code(block, language='python')  # Adjust language detection if needed
-                            # Non-code parts
-                            non_code = re.sub(r'```(.*?)```', '', content, flags=re.DOTALL)
-                            # Custom unescape for <ei> tags
-                            non_code = non_code.replace('&lt;ei&gt;', '<ei>').replace('&lt;/ei&gt;', '</ei>')
-                            escaped_non_code = html.escape(non_code)
-                            role_class = "chat-bubble-user" if msg['role'] == 'user' else "chat-bubble-assistant"
-                            st.markdown(f"<div class='{role_class}'><div class='wrapped-code'>{escaped_non_code}</div></div>", unsafe_allow_html=True)
-                        else:
-                            # Full content with custom unescape
-                            content = content.replace('&lt;ei&gt;', '<ei>').replace('&lt;/ei&gt;', '</ei>')
-                            escaped_content = html.escape(content)
-                            role_class = "chat-bubble-user" if msg['role'] == 'user' else "chat-bubble-assistant"
-                            st.markdown(f"<div class='{role_class}'><div class='wrapped-code'>{escaped_content}</div></div>", unsafe_allow_html=True)
-
-    # Chat Input
-    prompt = st.chat_input("Type your message here...")
-    if prompt:
-        st.session_state['messages'].append({"role": "user", "content": prompt})
-        with st.chat_message("user", avatar="🧑"):
-            escaped_prompt = html.escape(prompt)
-            st.markdown(f"<div class='chat-bubble-user'>{escaped_prompt}</div>", unsafe_allow_html=True)
-        with st.chat_message("assistant", avatar="🤖"):
-            response_container = st.empty()
-            generator = call_xai_api(model, st.session_state['messages'], custom_prompt, stream=True, image_files=uploaded_images if uploaded_images else None, enable_tools=enable_tools)
-            full_response = ""
-            for chunk in generator:
-                full_response += chunk
-                # Escape dynamically for streaming
-                escaped_full = html.escape(full_response).replace('&lt;ei&gt;', '<ei>').replace('&lt;/ei&gt;', '</ei>')
-                response_container.markdown(f"<div class='chat-bubble-assistant'><div class='wrapped-code'>{escaped_full}</div></div>", unsafe_allow_html=True)
-        st.session_state['messages'].append({"role": "assistant", "content": full_response})
-        # Save to History (Auto-title from first user message)
-        title = st.session_state['messages'][0]['content'][:50] + "..." if st.session_state['messages'] else "New Chat"
-        c.execute("INSERT INTO history (user, title, messages) VALUES (?, ?, ?)",
-                  (st.session_state['user'], title, json.dumps(st.session_state['messages'])))
-        conn.commit()
-
-# Load History
+# Chat Input
+prompt = st.chat_input("Type your message here...")
+if prompt:
+    st.session_state['messages'].append({"role": "user", "content": prompt})
+    with st.chat_message("user", avatar=""):
+        escaped_prompt = html.escape(prompt)
+        st.markdown(f"<div class='chat-bubble-user'>{escaped_prompt}</div>", unsafe_allow_html=True)
+    with st.chat_message("assistant", avatar=""):
+        response_container = st.empty()
+        generator = call_xai_api(model, st.session_state['messages'], custom_prompt, stream=True, image_files=uploaded_images if uploaded_images else None, enable_tools=enable_tools)
+        full_response = ""
+        for chunk in generator:
+            full_response += chunk
+            # Escape dynamically for streaming
+            escaped_full = html.escape(full_response).replace('<ei>', '<ei>').replace('</ei>', '</ei>')
+            response_container.markdown(f"<div class='chat-bubble-assistant'><div class='wrapped-code'>{escaped_full}</div></div>", unsafe_allow_html=True)
+    st.session_state['messages'].append({"role": "assistant", "content": full_response})
+    # Save to History (Auto-title from first user message)
+    title = st.session_state['messages'][0]['content'][:50] + "..." if st.session_state['messages'] else "New Chat"
+    c.execute("INSERT INTO history (user, title, messages) VALUES (?, ?, ?)",
+              (st.session_state['user'], title, json.dumps(st.session_state['messages'])))
+    conn.commit()# Load History
 def load_history(convo_id):
     c.execute("SELECT messages FROM history WHERE convo_id=?", (convo_id,))
     messages = json.loads(c.fetchone()[0])
     st.session_state['messages'] = messages
-    st.rerun()
-
-# Delete History
+    st.rerun()# Delete History
 def delete_history(convo_id):
     c.execute("DELETE FROM history WHERE convo_id=?", (convo_id,))
     conn.commit()
-    st.rerun()
-
-# Main App with Init Time Check
+    st.rerun()# Main App with Init Time Check
 if __name__ == "__main__":
     if 'logged_in' not in st.session_state:
         st.session_state['logged_in'] = False

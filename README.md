@@ -1,2 +1,2 @@
 # GrokCoder
-Coding Agent - All models
+Coding Agent - All Grok models

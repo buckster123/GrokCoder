@@ -1,34 +1,34 @@
-<p align="center">
-  <img src="https://img.shields.io/badge/Version-1.0-blue.svg" alt="Version">
-  <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License">
-  <img src="https://img.shields.io/github/stars/buckster123/GrokCoder?style=social" alt="GitHub Stars">
-  <img src="https://img.shields.io/badge/Powered%20by-xAI-FF69B4.svg" alt="Powered by xAI">
-  <img src="https://img.shields.io/badge/Platform-Raspberry%20Pi%205-red.svg" alt="Raspberry Pi 5">
-</p>
-<p align="center">
-<img src="https://via.placeholder.com/800x200/1f1c2c/928DAB?text=GrokCoder" alt="GrokCoder Banner" width="800"> <!-- Replace with actual banner image -->
-</p>
+![Version](https://img.shields.io/badge/Version-1.0-blue.svg)
+![License](https://img.shields.io/badge/License-MIT-green.svg)
+![GitHub Stars](https://img.shields.io/github/stars/buckster123/GrokCoder?style=social)
+![Powered by xAI](https://img.shields.io/badge/Powered%20by-xAI-FF69B4.svg)
+![Platform](https://img.shields.io/badge/Platform-Raspberry%20Pi%205-red.svg)
+GrokCoder Banner <!-- Replace with actual banner image -->
 
 
-<h1 align="center">GrokCoder: Streamlit-Powered Coding Agent for xAI Models on Raspberry Pi 🚀</h1>
+GrokCoder: Streamlit-Powered Coding Agent for xAI Models on Raspberry Pi 🚀
+
+A production-grade, standalone coding agent wrapping xAI models like grok-4-0709, grok-3-mini, and grok-code-fast-1 into a dual-brain powerhouse. Grok-4-0709 plans the heist, grok-code-fast-1 cracks the code, and grok-3-mini handles quick hacks. Nerd alert: It's like having R2-D2, C-3PO, and BB-8 in your Raspberry Pi 5, turning pocket silicon into a software sorcery lab.
 
 
-<p align="center">
-<strong>A production-grade, standalone coding agent wrapping xAI models like grok-4-0709, grok-3-mini, and grok-code-fast-1 into a dual-brain powerhouse. Grok-4-0709 plans the heist, grok-code-fast-1 cracks the code, and grok-3-mini handles quick hacks. Nerd alert: It's like having R2-D2, C-3PO, and BB-8 in your Raspberry Pi 5, turning pocket silicon into a software sorcery lab.</strong>
-</p>
 
+Introduction
 
-<p align="center">
-<a href="#introduction">Introduction</a> •
-<a href="#features">Features</a> •
-<a href="#installation">Installation</a> •
-<a href="#usage">Usage</a> •
-<a href="#example-use-case">Example Use Case</a> •
-<a href="#customization">Customization</a> •
-<a href="#troubleshooting">Troubleshooting</a> •
-<a href="#contributing">Contributing</a> •
-<a href="#license">License</a>
-</p>
+Features
+
+Installation
+
+Usage
+
+Example Use Case
+
+Customization
+
+Troubleshooting
+
+Contributing
+
+License
 
 
 
@@ -43,7 +43,9 @@ GrokCoder is a sleek, Streamlit-based coding agent optimized for the Raspberry P
 Why the Pi focus? Because coding on a $80 powerhouse is peak nerdery—deploy AI agents anywhere, from your desk to a drone. GrokCoder lets you collaborate with AI for clean, deployable code, all while sipping power like an efficient algorithm. Intermediate devs: We'll break it down like overclocking a CPU—step by step, with analogies and resources. Nerdy bonus: If "Pliny" sneaks into your files, expect ironic hearts ❤️ (a nod to ancient Roman Easter eggs in code).
 
 
-GitHub issues GitHub forks GitHub license
+GitHub issues
+GitHub forks
+GitHub license
 
 
 Features
@@ -250,8 +252,8 @@ License
 MIT License. See LICENSE for details. (TL;DR: Use, mod, share—just credit the nerds.)
 
 
-<p align="right">
-<em>Built with ❤️ by GrokCoder. Star the repo if it sparks joy on your Pi!</em>
-</p>
+Built with ❤️ by GrokCoder. Star the repo if it sparks joy on your Pi!
 
+
+GitHub Repo
 

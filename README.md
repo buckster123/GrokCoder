@@ -8,7 +8,7 @@
 
 ![[GrokCoder Banner](path/to/your/banner-image.png](https://github.com/buckster123/GrokCoder/blob/main/screenshot.png) <!-- Replace with actual banner image URL -->
 
-# A production-grade, standalone coding agent that harnesses xAI models like grok-4-0709, grok-3-mini, and grok-code-fast-1 into a dual-brain powerhouse. Grok-4-0709 handles strategic planning, grok-code-fast-1 delivers rapid code generation, and grok-3-mini manages quick tasks. It's like having R2-D2, C-3PO, and BB-8 embedded in your Raspberry Pi 5, transforming compact hardware into a full-fledged software development lab.
+ A standalone coding agent that harnesses xAI models like grok-4-0709, grok-3-mini, and grok-code-fast-1 into a dual-brain powerhouse. Grok-4-0709 handles strategic planning, grok-code-fast-1 delivers rapid code generation, and grok-3-mini manages quick tasks. It's like having R2-D2, C-3PO, and BB-8 embedded in your Raspberry Pi 5, transforming compact hardware into a full-fledged software development lab.
 
 ## Table of Contents
 

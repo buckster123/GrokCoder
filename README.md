@@ -250,10 +250,8 @@ License
 MIT License. See LICENSE for details. (TL;DR: Use, mod, share—just credit the nerds.)
 
 
-<p align="center">
+<p align="right">
 <em>Built with ❤️ by GrokCoder. Star the repo if it sparks joy on your Pi!</em>
 </p>
 
-
-GitHub Repo
 

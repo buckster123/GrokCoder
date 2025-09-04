@@ -1,3 +1,4 @@
+###
 # app.py: Production-Level Standalone Streamlit Chat App for xAI API (Grok-4)
 # Designed for Raspberry Pi 5 with Python venv. Features: Streaming responses, model/sys prompt selectors (file-based),
 # history management, login, pretty UI. Uses OpenAI SDK for compatibility and streaming (xAI is compatible).
@@ -5,6 +6,7 @@
 # Fixed: Escaped content in chat display to prevent InvalidCharacterError; enhanced prompt for tag handling.
 # New: Wrapped code blocks for better readability (multi-line wrapping without horizontal scroll).
 # New: Time tool for fetching current datetime (host or NTP sync).
+# New: Code execution tool for stateful REPL (supports specified libraries).
 import streamlit as st
 import os
 from openai import OpenAI  # Using OpenAI SDK for xAI compatibility and streaming
@@ -17,19 +19,29 @@ import base64  # For image handling
 import traceback  # For error logging
 import html  # For escaping content to prevent rendering errors
 import re  # For regex in code detection
-import ntplib  # For NTP time sync; pip install ntplib# Load environment variables
+import ntplib  # For NTP time sync; pip install ntplib
+import io  # For capturing code output
+import sys  # For stdout redirection
+
+# Load environment variables
 load_dotenv()
 API_KEY = os.getenv("XAI_API_KEY")
 if not API_KEY:
-    st.error("XAI_API_KEY not set in .env! Please add it and restart.")# Database Setup (SQLite for users and history) with WAL mode for concurrency
+    st.error("XAI_API_KEY not set in .env! Please add it and restart.")
+
+# Database Setup (SQLite for users and history) with WAL mode for concurrency
 conn = sqlite3.connect('chatapp.db', check_same_thread=False)
 conn.execute("PRAGMA journal_mode=WAL;")
 c = conn.cursor()
 c.execute('''CREATE TABLE IF NOT EXISTS users (username TEXT PRIMARY KEY, password TEXT)''')
 c.execute('''CREATE TABLE IF NOT EXISTS history (user TEXT, convo_id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, messages TEXT)''')
-conn.commit()# Prompts Directory (create if not exists, with defaults)
+conn.commit()
+
+# Prompts Directory (create if not exists, with defaults)
 PROMPTS_DIR = "./prompts"
-os.makedirs(PROMPTS_DIR, exist_ok=True)# Default Prompts (auto-create files if dir is empty)
+os.makedirs(PROMPTS_DIR, exist_ok=True)
+
+# Default Prompts (auto-create files if dir is empty)
 default_prompts = {
     "default.txt": "You are Grok, a highly intelligent, helpful AI assistant.",
     "rebel.txt": "You are a rebellious AI, challenging norms with unfiltered truth.",
@@ -47,11 +59,17 @@ Invoke tools via structured calls, then incorporate results into your response. 
 if not any(f.endswith('.txt') for f in os.listdir(PROMPTS_DIR)):
     for filename, content in default_prompts.items():
         with open(os.path.join(PROMPTS_DIR, filename), 'w') as f:
-            f.write(content)# Function to Load Prompt Files
+            f.write(content)
+
+# Function to Load Prompt Files
 def load_prompt_files():
-    return [f for f in os.listdir(PROMPTS_DIR) if f.endswith('.txt')]# Sandbox Directory for FS Tools (create if not exists)
+    return [f for f in os.listdir(PROMPTS_DIR) if f.endswith('.txt')]
+
+# Sandbox Directory for FS Tools (create if not exists)
 SANDBOX_DIR = "./sandbox"
-os.makedirs(SANDBOX_DIR, exist_ok=True)# Custom CSS for Pretty UI (Neon Gradient Theme, Chat Bubbles, Responsive) with Wrapping Fix and Padding
+os.makedirs(SANDBOX_DIR, exist_ok=True)
+
+# Custom CSS for Pretty UI (Neon Gradient Theme, Chat Bubbles, Responsive) with Wrapping Fix and Padding
 st.markdown("""<style>
     body {
         background: linear-gradient(to right, #1f1c2c, #928DAB);
@@ -107,16 +125,22 @@ st.markdown("""<style>
         background: linear-gradient(to right, #000000, #434343);
     }
 </style>
-""", unsafe_allow_html=True)# Helper: Hash Password
+""", unsafe_allow_html=True)
+
+# Helper: Hash Password
 def hash_password(password):
-    return sha256_crypt.hash(password)# Helper: Verify Password
+    return sha256_crypt.hash(password)
+
+# Helper: Verify Password
 def verify_password(stored, provided):
-    return sha256_crypt.verify(provided, stored)# FS Tool Functions (Sandboxed)
+    return sha256_crypt.verify(provided, stored)
+
+# FS Tool Functions (Sandboxed)
 def fs_read_file(file_path: str) -> str:
     """Read file content from sandbox (supports subdirectories)."""
     if not file_path:
         return "Invalid file path."
-    safe_path = os.path.normpath(os.path.join(SANDBOX_DIR, file_path))
+    safe_path = os.path.abspath(os.path.normpath(os.path.join(SANDBOX_DIR, file_path)))
     if not safe_path.startswith(os.path.abspath(SANDBOX_DIR)):
         return "Invalid file path."
     if not os.path.exists(safe_path):
@@ -133,7 +157,7 @@ def fs_write_file(file_path: str, content: str) -> str:
     """Write content to file in sandbox (supports subdirectories)."""
     if not file_path:
         return "Invalid file path."
-    safe_path = os.path.normpath(os.path.join(SANDBOX_DIR, file_path))
+    safe_path = os.path.abspath(os.path.normpath(os.path.join(SANDBOX_DIR, file_path)))
     if not safe_path.startswith(os.path.abspath(SANDBOX_DIR)):
         return "Invalid file path."
     dir_path = os.path.dirname(safe_path)
@@ -148,7 +172,7 @@ def fs_write_file(file_path: str, content: str) -> str:
 
 def fs_list_files(dir_path: str = "") -> str:
     """List files in a directory within the sandbox (default: root)."""
-    safe_dir = os.path.normpath(os.path.join(SANDBOX_DIR, dir_path))
+    safe_dir = os.path.abspath(os.path.normpath(os.path.join(SANDBOX_DIR, dir_path)))
     if not safe_dir.startswith(os.path.abspath(SANDBOX_DIR)):
         return "Invalid directory path."
     if not os.path.exists(safe_dir):
@@ -165,7 +189,7 @@ def fs_mkdir(dir_path: str) -> str:
     """Create a new directory (including nested) in the sandbox."""
     if not dir_path or dir_path in ['.', '..']:
         return "Invalid directory path."
-    safe_path = os.path.normpath(os.path.join(SANDBOX_DIR, dir_path))
+    safe_path = os.path.abspath(os.path.normpath(os.path.join(SANDBOX_DIR, dir_path)))
     if not safe_path.startswith(os.path.abspath(SANDBOX_DIR)):
         return "Invalid directory path."
     if os.path.exists(safe_path):
@@ -174,7 +198,9 @@ def fs_mkdir(dir_path: str) -> str:
         os.makedirs(safe_path)
         return f"Directory created successfully: {dir_path}"
     except Exception as e:
-        return f"Error creating directory: {str(e)}"# Time Tool Function
+        return f"Error creating directory: {str(e)}"
+
+# Time Tool Function
 def get_current_time(sync: bool = False, format: str = 'iso') -> str:
     """Fetch current time: host default, NTP if sync=true."""
     try:
@@ -198,7 +224,27 @@ def get_current_time(sync: bool = False, format: str = 'iso') -> str:
         else:  # iso
             return t
     except Exception as e:
-        return f"Time error: {str(e)}"# Tool Schema for Structured Outputs (Including Time Tool)
+        return f"Time error: {str(e)}"
+
+# Code Execution Function
+def code_execution(code: str) -> str:
+    """Execute Python code safely in a stateful REPL and return output/errors."""
+    if 'repl_namespace' not in st.session_state:
+        st.session_state['repl_namespace'] = {'__builtins__': __builtins__}  # Restricted globals
+    namespace = st.session_state['repl_namespace']
+    old_stdout = sys.stdout
+    redirected_output = io.StringIO()
+    sys.stdout = redirected_output
+    try:
+        exec(code, namespace)
+        output = redirected_output.getvalue()
+        return f"Execution successful. Output:\n{output}" if output else "Execution successful (no output)."
+    except Exception as e:
+        return f"Error: {str(e)}\n{traceback.format_exc()}"
+    finally:
+        sys.stdout = old_stdout
+
+# Tool Schema for Structured Outputs (Including Time Tool and Code Execution)
 TOOLS = [
     {
         "type": "function",
@@ -267,8 +313,24 @@ TOOLS = [
                 "required": []
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "code_execution",
+            "description": "Execute provided code in a stateful REPL environment and return output or errors for verification. Supports Python with various libraries (e.g., numpy, sympy, pygame). No internet access or package installation.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "code": { "type": "string", "description": "The code snippet to execute." }
+                },
+                "required": ["code"]
+            }
+        }
     }
-]# API Wrapper with Streaming and Tool Handling
+]
+
+# API Wrapper with Streaming and Tool Handling
 def call_xai_api(model, messages, sys_prompt, stream=True, image_files=None, enable_tools=False):
     client = OpenAI(
         api_key=API_KEY,
@@ -288,7 +350,7 @@ def call_xai_api(model, messages, sys_prompt, stream=True, image_files=None, ena
     full_response = ""
     def generate(current_messages):
         nonlocal full_response
-        max_iterations = 2  # Prevent infinite loops
+        max_iterations = 5  # Balanced for agentic tasks without high loop risk
         iteration = 0
         while iteration < max_iterations:
             iteration += 1
@@ -303,19 +365,27 @@ def call_xai_api(model, messages, sys_prompt, stream=True, image_files=None, ena
             )
             tool_calls = []
             chunk_response = ""
+            has_content = False
             for chunk in response:
                 delta = chunk.choices[0].delta
                 if delta.content is not None:
                     content = delta.content
                     chunk_response += content
                     yield content
+                    has_content = True
                 if delta.tool_calls:
                     tool_calls += delta.tool_calls
             full_response += chunk_response
+            if not tool_calls and not has_content:
+                print("[DEBUG] No progress in this iteration; breaking early")
+                break  # Graceful exit if nothing new
             if not tool_calls:
-                break  # No more tools; done
+                break  # Normal done
+            yield "\nProcessing additional steps...\n"  # User-friendly feedback
             # Process all tool calls in batch
+            tools_processed = False
             for tool_call in tool_calls:
+                tools_processed = True
                 func_name = tool_call.function.name
                 try:
                     args = json.loads(tool_call.function.arguments)
@@ -332,6 +402,8 @@ def call_xai_api(model, messages, sys_prompt, stream=True, image_files=None, ena
                         sync = args.get('sync', False)
                         fmt = args.get('format', 'iso')
                         result = get_current_time(sync, fmt)
+                    elif func_name == "code_execution":
+                        result = code_execution(args['code'])
                     else:
                         result = "Unknown tool."
                 except Exception as e:
@@ -342,8 +414,11 @@ def call_xai_api(model, messages, sys_prompt, stream=True, image_files=None, ena
                 yield f"\n[Tool Result ({func_name}): {result}]\n"
                 # Append to messages for next iteration
                 current_messages.append({"role": "tool", "content": result, "tool_call_id": tool_call.id})
+            if not tools_processed:
+                print("[DEBUG] No meaningful tools processed; breaking early")
+                break  # Added: Prevent unnecessary iterations if no tools were actually handled
         if iteration >= max_iterations:
-            yield "Error: Max tool iterations reached. Aborting to prevent loops."
+            yield "Reached max steps—summarizing results so far to avoid delays."
     try:
         if stream:
             return generate(api_messages)  # Return generator for streaming
@@ -363,7 +438,9 @@ def call_xai_api(model, messages, sys_prompt, stream=True, image_files=None, ena
         with open('app.log', 'a') as log:
             log.write(f"{error_msg}\n")
         time.sleep(5)
-        return call_xai_api(model, messages, sys_prompt, stream, image_files, enable_tools)  # Retry# Login Page
+        return call_xai_api(model, messages, sys_prompt, stream, image_files, enable_tools)  # Retry
+
+# Login Page
 def login_page():
     st.title("Welcome to Grok Chat App")
     st.subheader("Login or Register")
@@ -397,7 +474,9 @@ def login_page():
                     hashed = hash_password(new_pass)
                     c.execute("INSERT INTO users VALUES (?, ?)", (new_user, hashed))
                     conn.commit()
-                    st.success("Registered! Please login.")# Chat Page
+                    st.success("Registered! Please login.")
+
+# Chat Page
 def chat_page():
     st.title(f"Grok Chat - {st.session_state['user']}")
     # Sidebar: Settings and History
@@ -450,72 +529,79 @@ def chat_page():
             st.session_state['theme'] = 'dark' if current_theme == 'light' else 'light'
             st.rerun()  # Rerun to apply
         # Inject theme attribute
-        st.markdown(f'<body data-theme="{st.session_state.get("theme", "light")}"></body>', unsafe_allow_html=True)# Chat Display (with Wrapping, Conditional Escaping, Avatars, and Expanders)
-if 'messages' not in st.session_state:
-    st.session_state['messages'] = []
-# Truncate for performance
-if len(st.session_state['messages']) > 50:
-    st.session_state['messages'] = st.session_state['messages'][-50:]
-    st.warning("Chat truncated to last 50 messages for performance.")
-if st.session_state['messages']:
-    chunk_size = 10  # Group every 10 messages
-    for i in range(0, len(st.session_state['messages']), chunk_size):
-        chunk = st.session_state['messages'][i:i + chunk_size]
-        with st.expander(f"Messages {i+1}-{i+len(chunk)}"):
-            for msg in chunk:
-                avatar = "" if msg['role'] == 'user' else ""
-                with st.chat_message(msg['role'], avatar=avatar):
-                    content = msg['content']
-                    # Detect code blocks
-                    code_blocks = re.findall(r'```(.*?)```', content, re.DOTALL)
-                    if code_blocks:
-                        for block in code_blocks:
-                            st.code(block, language='python')  # Adjust language detection if needed
-                        # Non-code parts
-                        non_code = re.sub(r'```(.*?)```', '', content, flags=re.DOTALL)
-                        # Custom unescape for <ei> tags
-                        non_code = non_code.replace('<ei>', '<ei>').replace('</ei>', '</ei>')
-                        escaped_non_code = html.escape(non_code)
-                        role_class = "chat-bubble-user" if msg['role'] == 'user' else "chat-bubble-assistant"
-                        st.markdown(f"<div class='{role_class}'><div class='wrapped-code'>{escaped_non_code}</div></div>", unsafe_allow_html=True)
-                    else:
-                        # Full content with custom unescape
-                        content = content.replace('<ei>', '<ei>').replace('</ei>', '</ei>')
-                        escaped_content = html.escape(content)
-                        role_class = "chat-bubble-user" if msg['role'] == 'user' else "chat-bubble-assistant"
-                        st.markdown(f"<div class='{role_class}'><div class='wrapped-code'>{escaped_content}</div></div>", unsafe_allow_html=True)
+        st.markdown(f'<body data-theme="{st.session_state.get("theme", "light")}"></body>', unsafe_allow_html=True)
+    # Chat Display (with Wrapping, Conditional Escaping, Avatars, and Expanders)
+    if 'messages' not in st.session_state:
+        st.session_state['messages'] = []
+    # Truncate for performance
+    if len(st.session_state['messages']) > 50:
+        st.session_state['messages'] = st.session_state['messages'][-50:]
+        st.warning("Chat truncated to last 50 messages for performance.")
+    if st.session_state['messages']:
+        chunk_size = 10  # Group every 10 messages
+        for i in range(0, len(st.session_state['messages']), chunk_size):
+            chunk = st.session_state['messages'][i:i + chunk_size]
+            with st.expander(f"Messages {i+1}-{i+len(chunk)}"):
+                for msg in chunk:
+                    avatar = None
+                    with st.chat_message(msg['role'], avatar=avatar):
+                        content = msg['content']
+                        # Detect code blocks
+                        code_blocks = re.findall(r'```(.*?)```', content, re.DOTALL)
+                        if code_blocks:
+                            for block in code_blocks:
+                                st.code(block, language='python')  # Adjust language detection if needed
+                            # Non-code parts
+                            non_code = re.sub(r'```(.*?)```', '', content, flags=re.DOTALL)
+                            # Custom unescape for <ei> tags
+                            non_code = non_code.replace('<ei>', '<ei>').replace('</ei>', '</ei>')
+                            escaped_non_code = html.escape(non_code)
+                            role_class = "chat-bubble-user" if msg['role'] == 'user' else "chat-bubble-assistant"
+                            st.markdown(f"<div class='{role_class}'><div class='wrapped-code'>{escaped_non_code}</div></div>", unsafe_allow_html=True)
+                        else:
+                            # Full content with custom unescape
+                            content = content.replace('<ei>', '<ei>').replace('</ei>', '</ei>')
+                            escaped_content = html.escape(content)
+                            role_class = "chat-bubble-user" if msg['role'] == 'user' else "chat-bubble-assistant"
+                            st.markdown(f"<div class='{role_class}'><div class='wrapped-code'>{escaped_content}</div></div>", unsafe_allow_html=True)
 
-# Chat Input
-prompt = st.chat_input("Type your message here...")
-if prompt:
-    st.session_state['messages'].append({"role": "user", "content": prompt})
-    with st.chat_message("user", avatar=""):
-        escaped_prompt = html.escape(prompt)
-        st.markdown(f"<div class='chat-bubble-user'>{escaped_prompt}</div>", unsafe_allow_html=True)
-    with st.chat_message("assistant", avatar=""):
-        response_container = st.empty()
-        generator = call_xai_api(model, st.session_state['messages'], custom_prompt, stream=True, image_files=uploaded_images if uploaded_images else None, enable_tools=enable_tools)
-        full_response = ""
-        for chunk in generator:
-            full_response += chunk
-            # Escape dynamically for streaming
-            escaped_full = html.escape(full_response).replace('<ei>', '<ei>').replace('</ei>', '</ei>')
-            response_container.markdown(f"<div class='chat-bubble-assistant'><div class='wrapped-code'>{escaped_full}</div></div>", unsafe_allow_html=True)
-    st.session_state['messages'].append({"role": "assistant", "content": full_response})
-    # Save to History (Auto-title from first user message)
-    title = st.session_state['messages'][0]['content'][:50] + "..." if st.session_state['messages'] else "New Chat"
-    c.execute("INSERT INTO history (user, title, messages) VALUES (?, ?, ?)",
-              (st.session_state['user'], title, json.dumps(st.session_state['messages'])))
-    conn.commit()# Load History
+    # Chat Input
+    prompt = st.chat_input("Type your message here...")
+    if prompt:
+        st.session_state['messages'].append({"role": "user", "content": prompt})
+        with st.chat_message("user", avatar=None):
+            escaped_prompt = html.escape(prompt)
+            st.markdown(f"<div class='chat-bubble-user'>{escaped_prompt}</div>", unsafe_allow_html=True)
+        with st.chat_message("assistant", avatar=None):
+            response_container = st.empty()
+            generator = call_xai_api(model, st.session_state['messages'], custom_prompt, stream=True, image_files=uploaded_images if uploaded_images else None, enable_tools=enable_tools)
+            full_response = ""
+            for chunk in generator:
+                full_response += chunk
+                # Escape dynamically for streaming
+                escaped_full = html.escape(full_response).replace('<ei>', '<ei>').replace('</ei>', '</ei>')
+                response_container.markdown(f"<div class='chat-bubble-assistant'><div class='wrapped-code'>{escaped_full}</div></div>", unsafe_allow_html=True)
+        st.session_state['messages'].append({"role": "assistant", "content": full_response})
+        # Save to History (Auto-title from first user message)
+        title = st.session_state['messages'][0]['content'][:50] + "..." if st.session_state['messages'] else "New Chat"
+        c.execute("INSERT INTO history (user, title, messages) VALUES (?, ?, ?)",
+                  (st.session_state['user'], title, json.dumps(st.session_state['messages'])))
+        conn.commit()
+
+# Load History
 def load_history(convo_id):
     c.execute("SELECT messages FROM history WHERE convo_id=?", (convo_id,))
     messages = json.loads(c.fetchone()[0])
     st.session_state['messages'] = messages
-    st.rerun()# Delete History
+    st.rerun()
+
+# Delete History
 def delete_history(convo_id):
     c.execute("DELETE FROM history WHERE convo_id=?", (convo_id,))
     conn.commit()
-    st.rerun()# Main App with Init Time Check
+    st.rerun()
+
+# Main App with Init Time Check
 if __name__ == "__main__":
     if 'logged_in' not in st.session_state:
         st.session_state['logged_in'] = False

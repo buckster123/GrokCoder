@@ -8,7 +8,7 @@
 
 ![Grok Chat Banner](https://github.com/buckster123/GrokCoder/blob/main/screenshot.png)
 
-Grok Chat is a production-level, standalone Streamlit application designed for integration with xAI's API, optimized for deployment on Raspberry Pi 5 hardware. It facilitates interactive chat sessions with models such as grok-4-0709, grok-3-mini, and grok-code-fast-1, enabling workflows for planning, code generation, and task execution. The application supports model switching to leverage each model's strengths: grok-4-0709 for strategic planning, grok-3-mini for general tasks, and grok-code-fast-1 for specialized code generation. This setup transforms resource-constrained hardware into a capable development environment.
+Grok Chat is a production-level, standalone Streamlit application designed for integration with xAI's API, optimized for deployment on Raspberry Pi 5 hardware. It facilitates interactive chat sessions with models such as grok-4-0709, grok-3-mini, and grok-code-fast-1, enabling workflows for planning, code generation, and task execution. The application supports model switching to leverage each model's strengths: grok-4-0709 for strategic planning, grok-3-mini for general tasks, and grok-code-fast-1 for specialized code generation. This setup transforms resource-constrained hardware into a capable development environment. It has a Pro mode and a Noob mode selectable in the setting.
 
 ## Table of Contents
 

@@ -62,3 +62,93 @@ These features provide a responsive and efficient user experience.
 ### Steps
 
 1. **Clone the Repository**:
+   ```
+   git clone https://github.com/buckster123/GrokCoder.git
+   cd GrokCoder
+   ```
+
+2. **Create a Virtual Environment** (Recommended for dependency management):
+   ```
+   python3 -m venv venv
+   source venv/bin/activate
+   ```
+
+3. **Install Dependencies** (from `requirements.txt`):
+   ```
+   pip install -r requirements.txt
+   ```
+   Dependencies include Streamlit, OpenAI, passlib, python-dotenv, ntplib, and libraries for code execution (e.g., numpy, sympy).
+
+4. **Configuration**:
+   - Create a `.env` file containing `XAI_API_KEY=your-key-here`.
+   - The `./prompts/` and `./sandbox/` directories are created automatically.
+
+5. **Run the Application**:
+   ```
+   streamlit run app.py
+   ```
+   Access the interface at `http://localhost:8501` or the Raspberry Pi's IP address (e.g., `http://raspberrypi.local:8501`). For headless mode, use `screen -S grokchat`.
+
+### Docker Deployment (Optional)
+```
+docker build -t grokchat .
+docker run -p 8501:8501 --network=host grokchat
+```
+
+## Usage
+
+1. **Authentication**: Register or log in using secure credentials.
+2. **Sidebar Settings**: Select a model, edit or load a system prompt, enable file tools, and upload images as needed.
+3. **Chat Interaction**: Enter queries to receive streaming responses.
+4. **Tool and Memory Usage**: With tools enabled, request file operations (e.g., create directories, read/write files) or memory actions (e.g., "Save preference: Use Python for scripts"). The AI handles confirmations and sandbox interactions.
+5. **Code Execution**: Use the tool for verifying snippets, e.g., "Execute this code: import numpy as np; print(np.array([1,2,3]))".
+6. **History Management**: Search, load, or delete previous conversations; clear the current chat for new sessions.
+
+Consult the Streamlit [documentation](https://docs.streamlit.io/) for additional interface details, and monitor system resources using `htop`.
+
+## Example Use Case: Multi-Model Development Workflow
+
+**Scenario**: Build a web scraper on Raspberry Pi hardware using model specialization and persistent memory.
+
+1. **Planning Phase (grok-4-0709)**: Select the model and query: "Outline a Python web scraper using requests and BeautifulSoup, including error handling." Save the outline: "Save progress on scraper-project."
+   - The AI generates a structured plan, stored via sandbox tools for later access.
+
+2. **Implementation Phase (grok-code-fast-1)**: Switch models and recall: "Recall scraper-project." Then: "Generate code based on the plan in PEP 8 style."
+   - The AI produces and verifies code, suggesting sandbox storage for testing.
+
+3. **Refinement Phase (grok-3-mini)**: Switch models and query: "Search memories for scraper-project progress." Then: "Optimize the code for performance."
+   - Leverage stored data for iterative improvements.
+
+4. **Verification**: Enable tools and request: "Create directory 'scraper' and write 'scraper.py' to it." Test the file directly with code_execution: "Execute the code in scraper.py".
+
+This approach utilizes model switching and sandbox-based memory for continuous, efficient development.
+
+## Customization
+
+- **Model Options**: Edit the `st.selectbox` in `app.py` to include additional xAI models.
+- **Tool Extensions**: Modify the `TOOLS` list to add functionalities; update prompts for new behaviors.
+- **Prompt Files**: Add `.txt` files to `./prompts/` for domain-specific configurations.
+- **Interface Adjustments**: Customize CSS in `app.py` for theme variations, suitable for touchscreen interfaces.
+
+The repository is open-source; fork it for tailored modifications.
+
+## Troubleshooting
+
+- **API Connectivity**: Verify the `.env` file and network settings; built-in retries handle transient issues.
+- **Tool Errors**: Ensure `./sandbox/` has appropriate permissions and tools are enabled. Review `app.log` for diagnostics.
+- **Performance on Raspberry Pi**: Limit image uploads and truncate extended histories. Use cooling solutions for prolonged operation.
+- **General Issues**: Report problems with logs and steps to reproduce on the [issues page](https://github.com/buckster123/GrokCoder/issues).
+
+## Contributing
+
+Contributions are welcome. Fork the repository, create a branch (e.g., `feature/new-tool`), commit changes adhering to PEP 8, and submit a pull request.
+
+- Submit bug reports or feature requests via [Issues](https://github.com/buckster123/GrokCoder/issues).
+
+Acknowledgments to xAI for the underlying models.
+
+## License
+
+MIT License. See [LICENSE](LICENSE) for full terms.
+
+

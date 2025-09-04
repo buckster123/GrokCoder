@@ -6,7 +6,6 @@
 # Fixed: Escaped content in chat display to prevent InvalidCharacterError; enhanced prompt for tag handling.
 # New: Wrapped code blocks for better readability (multi-line wrapping without horizontal scroll).
 # New: Time tool for fetching current datetime (host or NTP sync).
-# New: Code execution tool for stateful REPL (supports specified libraries).
 import streamlit as st
 import os
 from openai import OpenAI  # Using OpenAI SDK for xAI compatibility and streaming
@@ -20,8 +19,6 @@ import traceback  # For error logging
 import html  # For escaping content to prevent rendering errors
 import re  # For regex in code detection
 import ntplib  # For NTP time sync; pip install ntplib
-import io  # For capturing code output
-import sys  # For stdout redirection
 
 # Load environment variables
 load_dotenv()
@@ -226,25 +223,7 @@ def get_current_time(sync: bool = False, format: str = 'iso') -> str:
     except Exception as e:
         return f"Time error: {str(e)}"
 
-# Code Execution Function
-def code_execution(code: str) -> str:
-    """Execute Python code safely in a stateful REPL and return output/errors."""
-    if 'repl_namespace' not in st.session_state:
-        st.session_state['repl_namespace'] = {'__builtins__': __builtins__}  # Restricted globals
-    namespace = st.session_state['repl_namespace']
-    old_stdout = sys.stdout
-    redirected_output = io.StringIO()
-    sys.stdout = redirected_output
-    try:
-        exec(code, namespace)
-        output = redirected_output.getvalue()
-        return f"Execution successful. Output:\n{output}" if output else "Execution successful (no output)."
-    except Exception as e:
-        return f"Error: {str(e)}\n{traceback.format_exc()}"
-    finally:
-        sys.stdout = old_stdout
-
-# Tool Schema for Structured Outputs (Including Time Tool and Code Execution)
+# Tool Schema for Structured Outputs (Including Time Tool)
 TOOLS = [
     {
         "type": "function",
@@ -313,20 +292,6 @@ TOOLS = [
                 "required": []
             }
         }
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "code_execution",
-            "description": "Execute provided code in a stateful REPL environment and return output or errors for verification. Supports Python with various libraries (e.g., numpy, sympy, pygame). No internet access or package installation.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "code": { "type": "string", "description": "The code snippet to execute." }
-                },
-                "required": ["code"]
-            }
-        }
     }
 ]
 
@@ -352,6 +317,7 @@ def call_xai_api(model, messages, sys_prompt, stream=True, image_files=None, ena
         nonlocal full_response
         max_iterations = 5  # Balanced for agentic tasks without high loop risk
         iteration = 0
+        tool_history = set()  # Track to detect loops
         while iteration < max_iterations:
             iteration += 1
             print(f"[LOG] API Call Iteration: {iteration}")  # Debug
@@ -380,15 +346,20 @@ def call_xai_api(model, messages, sys_prompt, stream=True, image_files=None, ena
                 print("[DEBUG] No progress in this iteration; breaking early")
                 break  # Graceful exit if nothing new
             if not tool_calls:
-                break  # Normal done
+                break
             yield "\nProcessing additional steps...\n"  # User-friendly feedback
-            # Process all tool calls in batch
             tools_processed = False
             for tool_call in tool_calls:
                 tools_processed = True
                 func_name = tool_call.function.name
+                args_str = tool_call.function.arguments  # For loop detection
+                call_key = f"{func_name}:{args_str}"
+                if call_key in tool_history:
+                    yield "Detected potential loop in FS ops—aborting to save resources."
+                    return  # Early abort on repeat
+                tool_history.add(call_key)
                 try:
-                    args = json.loads(tool_call.function.arguments)
+                    args = json.loads(args_str)
                     if func_name == "fs_read_file":
                         result = fs_read_file(args['file_path'])
                     elif func_name == "fs_write_file":
@@ -402,21 +373,18 @@ def call_xai_api(model, messages, sys_prompt, stream=True, image_files=None, ena
                         sync = args.get('sync', False)
                         fmt = args.get('format', 'iso')
                         result = get_current_time(sync, fmt)
-                    elif func_name == "code_execution":
-                        result = code_execution(args['code'])
                     else:
                         result = "Unknown tool."
                 except Exception as e:
                     result = f"Tool error: {traceback.format_exc()}"
-                    print(f"[LOG] Tool Error: {result}")  # Debug
+                    print(f"[LOG] Tool Error: {result}")
                     with open('app.log', 'a') as log:
                         log.write(f"Tool Error: {result}\n")
                 yield f"\n[Tool Result ({func_name}): {result}]\n"
-                # Append to messages for next iteration
                 current_messages.append({"role": "tool", "content": result, "tool_call_id": tool_call.id})
             if not tools_processed:
                 print("[DEBUG] No meaningful tools processed; breaking early")
-                break  # Added: Prevent unnecessary iterations if no tools were actually handled
+                break
         if iteration >= max_iterations:
             yield "Reached max steps—summarizing results so far to avoid delays."
     try:

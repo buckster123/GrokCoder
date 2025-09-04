@@ -38,7 +38,7 @@ Optimized for efficiency on Raspberry Pi hardware, Grok Chat enables AI-assisted
 
 - **Interactive Chat with Streaming Responses**: Conversational interface with real-time response generation, expandable message groups, and automatic syntax highlighting for code blocks.
 - **Model Selection**: Seamless switching between xAI models (grok-4-0709, grok-3-mini, grok-code-fast-1) to align with workflow requirements.
-- **System Prompt Management**: Load, edit, and save prompts from the `./prompts/` directory, with defaults for general assistance, coding, and tool-enabled scenarios.
+- **System Prompt Management**: Load, edit, and save prompts from the `./prompts/` directory, with defaults for general assistance, coding, and tool-enabled scenarios. Includes a "pro" variant optimized for experienced developers focusing on production-level code in languages like Go, Rust, and TypeScript.
 - **User Authentication**: Secure login and registration using hashed passwords via passlib.
 - **Chat History Management**: SQLite database for storing user-specific, searchable, and auto-titled conversation histories.
 - **Image Analysis Support**: Upload images for model-based analysis, such as interpreting diagrams or code excerpts.
@@ -46,7 +46,7 @@ Optimized for efficiency on Raspberry Pi hardware, Grok Chat enables AI-assisted
 - **Code Execution Support**: Stateful Python REPL tool for executing and verifying code snippets, supporting libraries like numpy, sympy, and pygame for computational tasks.
 - **Persistent Memory via Sandbox**: Utilizes sandbox tools to store and retrieve hierarchical data (e.g., user preferences, project details, progress notes) as JSON files. Supports triggers for saving, recalling, updating, and searching memories, with built-in caching and size limits for efficiency.
 - **User Interface Enhancements**: Neon-gradient theme, dark mode toggle, and wrapped code display to prevent horizontal scrolling.
-- **Performance Optimizations**: Automatic message truncation, API retry mechanisms, and limits on tool iterations to ensure reliability on resource-limited hardware.
+- **Performance Optimizations**: Automatic message truncation, API retry mechanisms, and limits on tool iterations with improved loop detection to ensure reliability on resource-limited hardware.
 
 These features provide a responsive and efficient user experience.
 
@@ -98,7 +98,7 @@ docker run -p 8501:8501 --network=host grokchat
 ## Usage
 
 1. **Authentication**: Register or log in using secure credentials.
-2. **Sidebar Settings**: Select a model, edit or load a system prompt, enable file tools, and upload images as needed.
+2. **Sidebar Settings**: Select a model, edit or load a system prompt (e.g., the "pro" variant for advanced users), enable file tools, and upload images as needed.
 3. **Chat Interaction**: Enter queries to receive streaming responses.
 4. **Tool and Memory Usage**: With tools enabled, request file operations (e.g., create directories, read/write files) or memory actions (e.g., "Save preference: Use Python for scripts"). The AI handles confirmations and sandbox interactions.
 5. **Code Execution**: Use the tool for verifying snippets, e.g., "Execute this code: import numpy as np; print(np.array([1,2,3]))".
@@ -127,7 +127,7 @@ This approach utilizes model switching and sandbox-based memory for continuous, 
 
 - **Model Options**: Edit the `st.selectbox` in `app.py` to include additional xAI models.
 - **Tool Extensions**: Modify the `TOOLS` list to add functionalities; update prompts for new behaviors.
-- **Prompt Files**: Add `.txt` files to `./prompts/` for domain-specific configurations.
+- **Prompt Files**: Add `.txt` files to `./prompts/` for domain-specific configurations, such as the "pro" variant for advanced production-level development.
 - **Interface Adjustments**: Customize CSS in `app.py` for theme variations, suitable for touchscreen interfaces.
 
 The repository is open-source; fork it for tailored modifications.
@@ -150,5 +150,3 @@ Acknowledgments to xAI for the underlying models.
 ## License
 
 MIT License. See [LICENSE](LICENSE) for full terms.
-
-

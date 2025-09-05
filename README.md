@@ -1,152 +1,132 @@
-# Grok Chat: Standalone Streamlit Application for xAI API Integration
+# GrokCoder: Advanced AI Coding Assistant with Streamlit Chat App
 
-![Version](https://img.shields.io/badge/Version-1.2-blue.svg)
-![License](https://img.shields.io/badge/License-MIT-green.svg)
-![GitHub Stars](https://img.shields.io/github/stars/buckster123/GrokCoder?style=social)
-![Powered by xAI](https://img.shields.io/badge/Powered%20by-xAI-FF69B4.svg)
-![Platform](https://img.shields.io/badge/Platform-Raspberry%20Pi%205-red.svg)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python Version](https://img.shields.io/badge/Python-3.8%2B-blue)](https://www.python.org/)
+[![Streamlit](https://img.shields.io/badge/Streamlit-1.0%2B-red)](https://streamlit.io/)
+[![xAI API](https://img.shields.io/badge/xAI%20API-Compatible-green)](https://x.ai/)
 
-![Grok Chat Banner](https://github.com/buckster123/GrokCoder/blob/main/screenshot.png)
+## Overview
 
-Grok Chat is a production-level, standalone Streamlit application designed for integration with xAI's API, optimized for deployment on Raspberry Pi 5 hardware. It facilitates interactive chat sessions with models such as grok-4-0709, grok-3-mini, and grok-code-fast-1, enabling workflows for planning, code generation, and task execution. The application supports model switching to leverage each model's strengths: grok-4-0709 for strategic planning, grok-3-mini for general tasks, and grok-code-fast-1 for specialized code generation. This setup transforms resource-constrained hardware into a capable development environment. It has a Pro mode and a Noob mode selectable in the setting.
+GrokCoder is an advanced AI-powered coding and learning assistant built on the Grok model from xAI. It specializes in generating high-quality, clean, and deployable code while emphasizing best practices, self-verification, and educational explanations. Designed for intermediate users, GrokCoder provides creative yet practical solutions across various programming languages, with defaults to Python for scripting, HTML/JS/PHP for web development, and Linux-related tools.
 
-## Table of Contents
+This repository combines GrokCoder with a production-level standalone Streamlit chat application (`app.py`). The app serves as an interactive interface for GrokCoder, enabling users to chat with the AI, manage conversations, and leverage advanced tools like sandboxed file operations, code execution, time fetching, and memory management. Optimized for Raspberry Pi 5, the app features streaming responses, user authentication, history persistence, and a customizable UI.
 
-- [Introduction](#introduction)
-- [Features](#features)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Example Use Case](#example-use-case)
-- [Customization](#customization)
-- [Troubleshooting](#troubleshooting)
-- [Contributing](#contributing)
-- [License](#license)
-
-## Introduction
-
-![Grok Chat Demo](path/to/your/demo-gif-or-screenshot.gif) <!-- Replace with actual GIF or screenshot URL -->
-
-Grok Chat is a Streamlit-based application tailored for Raspberry Pi 5, providing an interactive interface for xAI's API. It utilizes the OpenAI SDK for compatibility and supports models including grok-4-0709 for complex reasoning, grok-3-mini for general tasks, and grok-code-fast-1 for specialized code generation. The application runs within a Python virtual environment, offering streaming responses, customizable system prompts, and sandboxed file operations in a modern user interface with neon-gradient styling.
-
-Optimized for efficiency on Raspberry Pi hardware, Grok Chat enables AI-assisted development with low power consumption. It is suitable for intermediate developers, providing detailed explanations, step-by-step guidance, and resource recommendations in responses.
-
-[![GitHub issues](https://img.shields.io/github/issues/buckster123/GrokCoder)](https://github.com/buckster123/GrokCoder/issues)
-[![GitHub forks](https://img.shields.io/github/forks/buckster123/GrokCoder)](https://github.com/buckster123/GrokCoder/network)
-[![GitHub license](https://img.shields.io/github/license/buckster123/GrokCoder)](https://github.com/buckster123/GrokCoder/blob/main/LICENSE)
+The integration allows users to harness GrokCoder's coding expertise through a user-friendly chat interface, making it ideal for coding assistance, learning, and agentic workflows.
 
 ## Features
 
-- **Interactive Chat with Streaming Responses**: Conversational interface with real-time response generation, expandable message groups, and automatic syntax highlighting for code blocks.
-- **Model Selection**: Seamless switching between xAI models (grok-4-0709, grok-3-mini, grok-code-fast-1) to align with workflow requirements.
-- **System Prompt Management**: Load, edit, and save prompts from the `./prompts/` directory, with defaults for general assistance, coding, and tool-enabled scenarios. Includes a "pro" variant optimized for experienced developers focusing on production-level code in languages like Go, Rust, and TypeScript.
-- **User Authentication**: Secure login and registration using hashed passwords via passlib.
-- **Chat History Management**: SQLite database for storing user-specific, searchable, and auto-titled conversation histories.
-- **Image Analysis Support**: Upload images for model-based analysis, such as interpreting diagrams or code excerpts.
-- **Sandboxed File Operations**: Toggleable tools for reading, writing, listing, and creating directories within the `./sandbox/` directory. Supports relative paths and nested structures for organized file management. The AI invokes these tools through structured calls, ensuring secure execution.
-- **Code Execution Support**: Stateful Python REPL tool for executing and verifying code snippets, supporting libraries like numpy, sympy, and pygame for computational tasks.
-- **Persistent Memory via Sandbox**: Utilizes sandbox tools to store and retrieve hierarchical data (e.g., user preferences, project details, progress notes) as JSON files. Supports triggers for saving, recalling, updating, and searching memories, with built-in caching and size limits for efficiency.
-- **User Interface Enhancements**: Neon-gradient theme, dark mode toggle, and wrapped code display to prevent horizontal scrolling.
-- **Performance Optimizations**: Automatic message truncation, API retry mechanisms, and limits on tool iterations with improved loop detection to ensure reliability on resource-limited hardware.
+### GrokCoder Capabilities
+- **Code Generation and Best Practices**: Produces readable, efficient code following style guides (e.g., PEP 8 for Python, Airbnb for JS). Includes error handling, security, performance optimizations, and modular design.
+- **Educational Focus**: Explains concepts clearly, breaks down complex ideas, and provides learning resources. Assumes intermediate user level but adapts for clarity.
+- **Creative Solutions**: Offers innovative approaches with pros/cons analysis, encouraging extensibility.
+- **Self-Verification**: Includes edge case comments, unit test suggestions (e.g., pytest, Jest), and simulated outputs.
+- **Language Support**: Defaults to Python, HTML/JS/PHP, and Bash/Linux tools. Supports Java, C++, Rust, Go, Ruby, Swift, Kotlin, SQL, and more.
+- **Agentic Workflow**: Plans tasks step-by-step, uses tools proactively, and maintains state with memory and file systems.
+- **Tool Integration**: Access to a suite of tools for enhanced functionality (detailed below).
 
-These features provide a responsive and efficient user experience.
+### Streamlit Chat App Features
+- **User Authentication**: Secure login/register with SHA-256 hashed passwords stored in SQLite.
+- **Chat Interface**: Streaming responses, chat bubbles, code block highlighting, and wrapping for readability. Supports image uploads for vision tasks.
+- **System Prompt Management**: Load, edit, and save prompts from files in `./prompts/`. Defaults include "default", "rebel", "coder", and "tools-enabled".
+- **Model Selection**: Choose from Grok models like `grok-4-0709`, `grok-3-mini`, `grok-code-fast-1`.
+- **History Management**: Save, load, search, and delete conversations with auto-titling. Persisted in SQLite with WAL mode for concurrency.
+- **UI Customization**: Neon gradient theme, dark mode toggle, responsive design, and expandable message groups.
+- **Tool Enablement**: Optional sandboxed tools for file I/O, time queries, code execution, and memory operations.
+- **Performance Optimizations**: Message truncation, retry logic for API errors, and logging.
+- **Vision Support**: Upload multiple images for analysis in chats.
+- **Raspberry Pi Optimization**: Lightweight, venv-compatible, with NTP time sync.
+
+## Tools and Capabilities
+
+GrokCoder and the app integrate a powerful set of tools for agentic tasks. Tools are invoked via structured calls and are sandboxed for safety. The app handles tool execution server-side, ensuring no direct access to the host system.
+
+### Available Tools
+- **fs_read_file(file_path)**: Reads content from a file in `./sandbox/`. Supports relative paths (e.g., `subdir/test.txt`).
+- **fs_write_file(file_path, content)**: Writes content to a file in `./sandbox/`. Adds ironic flair if "Love" is detected.
+- **fs_list_files(dir_path optional)**: Lists files in a sandbox directory (default: root).
+- **fs_mkdir(dir_path)**: Creates nested directories in `./sandbox/`.
+- **get_current_time(sync optional, format optional)**: Fetches current time (host or NTP-synced). Formats: 'iso', 'human', 'json'.
+- **code_execution(code)**: Executes Python code in a stateful REPL with libraries like numpy, sympy, pygame. No internet or installs.
+- **memory_insert(mem_key, mem_value)**: Inserts/updates key-value pairs (dict) in a hybrid cache+SQLite memory system for persistent logging.
+- **memory_query(mem_key optional, limit optional)**: Retrieves specific or recent memory entries as JSON.
+- **Additional GrokCoder Tools** (usable in app via API compatibility):
+  - **browse_page(url, instructions)**: Fetches and summarizes webpage content.
+  - **web_search(query, num_results optional)**: Performs web searches with site operators.
+
+Tools are enabled via a sidebar checkbox and follow strict rules to prevent loops (e.g., max 5 iterations, batch processing).
+
+### Tool Use Guidelines (for GrokCoder)
+- Plan calls in advance, use parallelism, and limit iterations to 1-2 cycles.
+- Maintain state with memory and sandbox files to avoid redundant calls.
+- Handle errors gracefully and fallback to knowledge-based responses.
 
 ## Installation
 
 ### Prerequisites
+- Python 3.8+ (venv recommended for Raspberry Pi).
+- xAI API Key (set in `.env` as `XAI_API_KEY`).
+- Dependencies: Install via `pip install -r requirements.txt` (create one with: streamlit, openai, passlib, sqlite3, python-dotenv, ntplib).
 
-- Raspberry Pi 5 running Raspberry Pi OS or a compatible Linux distribution.
-- Python 3.8 or later (install via `sudo apt install python3-venv` if necessary).
-- xAI API key (obtain from [x.ai/api](https://x.ai/api)).
-- Optional: `ntplib` for precise time synchronization (`pip install ntplib`).
-
-### Steps
-
-1. **Clone the Repository**:
+### Setup
+1. Clone the repository:
    ```
-   git clone https://github.com/buckster123/GrokCoder.git
-   cd GrokCoder
+   git clone https://github.com/yourusername/grokcoder-streamlit-app.git
+   cd grokcoder-streamlit-app
    ```
-
-2. **Create a Virtual Environment** (Recommended for dependency management):
+2. Create and activate a virtual environment:
    ```
-   python3 -m venv venv
-   source venv/bin/activate
+   python -m venv venv
+   source venv/bin/activate  # On Linux/RPi
    ```
-
-3. **Install Dependencies** (from `requirements.txt`):
+3. Install dependencies:
    ```
-   pip install -r requirements.txt
+   pip install streamlit openai passlib python-dotenv ntplib
    ```
-   Dependencies include Streamlit, OpenAI, passlib, python-dotenv, ntplib, and libraries for code execution (e.g., numpy, sympy).
-
-4. **Configuration**:
-   - Create a `.env` file containing `XAI_API_KEY=your-key-here`.
-   - The `./prompts/` and `./sandbox/` directories are created automatically.
-
-5. **Run the Application**:
+4. Create `.env` with your xAI API key:
+   ```
+   XAI_API_KEY=your_key_here
+   ```
+5. (Optional) Add custom prompt files to `./prompts/`.
+6. Run the app:
    ```
    streamlit run app.py
    ```
-   Access the interface at `http://localhost:8501` or the Raspberry Pi's IP address (e.g., `http://raspberrypi.local:8501`). For headless mode, use `screen -S grokchat`.
 
-### Docker Deployment (Optional)
-```
-docker build -t grokchat .
-docker run -p 8501:8501 --network=host grokchat
-```
+The app creates `./sandbox/` and `./prompts/` directories automatically, along with a SQLite database (`chatapp.db`).
 
 ## Usage
 
-1. **Authentication**: Register or log in using secure credentials.
-2. **Sidebar Settings**: Select a model, edit or load a system prompt (e.g., the "pro" variant for advanced users), enable file tools, and upload images as needed.
-3. **Chat Interaction**: Enter queries to receive streaming responses.
-4. **Tool and Memory Usage**: With tools enabled, request file operations (e.g., create directories, read/write files) or memory actions (e.g., "Save preference: Use Python for scripts"). The AI handles confirmations and sandbox interactions.
-5. **Code Execution**: Use the tool for verifying snippets, e.g., "Execute this code: import numpy as np; print(np.array([1,2,3]))".
-6. **History Management**: Search, load, or delete previous conversations; clear the current chat for new sessions.
+1. **Login/Register**: Access the app at `http://localhost:8501` (or RPi IP). Create an account or log in.
+2. **Configure Chat**: Select model, prompt file, enable tools, and upload images if needed.
+3. **Chat with GrokCoder**: Type messages; responses stream in real-time. Use tools by mentioning them (e.g., "Read file test.txt").
+4. **Manage History**: Save chats automatically; load/search/delete from sidebar.
+5. **Tool Interactions**: When tools are enabled, GrokCoder can perform file ops, execute code, query time, or manage memory.
+6. **Customization**: Edit prompts in-app and save new ones. Toggle dark mode for better visibility.
 
-Consult the Streamlit [documentation](https://docs.streamlit.io/) for additional interface details, and monitor system resources using `htop`.
+Example: Ask "Write a Python script to calculate Fibonacci" – GrokCoder will provide code, explanations, and tests.
 
-## Example Use Case: Multi-Model Development Workflow
+## App Architecture
 
-**Scenario**: Build a web scraper on Raspberry Pi hardware using model specialization and persistent memory.
+- **Frontend**: Streamlit with custom CSS for theming and chat bubbles. Handles input, display, and settings.
+- **Backend**: OpenAI SDK for xAI API compatibility. Custom generators for streaming and tool handling.
+- **Database**: SQLite for users, history, and memory (with indexing for efficiency).
+- **Tools**: Sandboxed functions for FS, time, code exec, and memory. Processed in batches to minimize API calls.
+- **State Management**: Streamlit session_state for messages, themes, and REPL namespace. Hybrid cache for memory speed.
+- **Error Handling**: Retries on API failures, logging to `app.log`, and user-friendly messages.
 
-1. **Planning Phase (grok-4-0709)**: Select the model and query: "Outline a Python web scraper using requests and BeautifulSoup, including error handling." Save the outline: "Save progress on scraper-project."
-   - The AI generates a structured plan, stored via sandbox tools for later access.
-
-2. **Implementation Phase (grok-code-fast-1)**: Switch models and recall: "Recall scraper-project." Then: "Generate code based on the plan in PEP 8 style."
-   - The AI produces and verifies code, suggesting sandbox storage for testing.
-
-3. **Refinement Phase (grok-3-mini)**: Switch models and query: "Search memories for scraper-project progress." Then: "Optimize the code for performance."
-   - Leverage stored data for iterative improvements.
-
-4. **Verification**: Enable tools and request: "Create directory 'scraper' and write 'scraper.py' to it." Test the file directly with code_execution: "Execute the code in scraper.py".
-
-This approach utilizes model switching and sandbox-based memory for continuous, efficient development.
-
-## Customization
-
-- **Model Options**: Edit the `st.selectbox` in `app.py` to include additional xAI models.
-- **Tool Extensions**: Modify the `TOOLS` list to add functionalities; update prompts for new behaviors.
-- **Prompt Files**: Add `.txt` files to `./prompts/` for domain-specific configurations, such as the "pro" variant for advanced production-level development.
-- **Interface Adjustments**: Customize CSS in `app.py` for theme variations, suitable for touchscreen interfaces.
-
-The repository is open-source; fork it for tailored modifications.
-
-## Troubleshooting
-
-- **API Connectivity**: Verify the `.env` file and network settings; built-in retries handle transient issues.
-- **Tool Errors**: Ensure `./sandbox/` has appropriate permissions and tools are enabled. Review `app.log` for diagnostics.
-- **Performance on Raspberry Pi**: Limit image uploads and truncate extended histories. Use cooling solutions for prolonged operation.
-- **General Issues**: Report problems with logs and steps to reproduce on the [issues page](https://github.com/buckster123/GrokCoder/issues).
+The app is designed for extensibility – add more tools or models easily.
 
 ## Contributing
 
-Contributions are welcome. Fork the repository, create a branch (e.g., `feature/new-tool`), commit changes adhering to PEP 8, and submit a pull request.
-
-- Submit bug reports or feature requests via [Issues](https://github.com/buckster123/GrokCoder/issues).
-
-Acknowledgments to xAI for the underlying models.
+Contributions welcome! Fork the repo, create a feature branch, and submit a PR. Focus on:
+- Bug fixes, performance improvements, or new tools.
+- Ensure code follows PEP 8 and includes tests.
+- Update documentation for changes.
 
 ## License
 
-MIT License. See [LICENSE](LICENSE) for full terms.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+For questions or support, open an issue or contact the maintainer. Happy coding with GrokCoder!
